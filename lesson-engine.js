@@ -152,14 +152,14 @@ function setFeedback(elementId, type, html) {
 }
 
 async function verifyExercise(code, output, exercise) {
-  const requirements = exercise.requirements || [];
-  const mustPrint = exercise.mustPrint || [];
+  const requirementsJson = JSON.stringify(exercise.requirements || []);
+  const mustPrintJson = JSON.stringify(exercise.mustPrint || []);
 
   const checker = `
-import sys, io
+import sys, io, json
 _code = ${JSON.stringify(code)}
-_requirements = ${JSON.stringify(requirements)}
-_must_print = ${JSON.stringify(mustPrint)}
+_requirements = json.loads(${JSON.stringify(requirementsJson)})
+_must_print = json.loads(${JSON.stringify(mustPrintJson)})
 _ns = {}
 _tmp = io.StringIO()
 _old = sys.stdout
