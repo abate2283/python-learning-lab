@@ -3,7 +3,8 @@ let pyodide = null;
 const STORAGE_KEY = "pythonLearningLabProgress";
 const params = new URLSearchParams(window.location.search);
 const lessonId = params.get("id") || "string-variables";
-const lesson = window.LESSONS.find(item => item.id === lessonId);
+const lessonIndex = window.LESSONS.findIndex(item => item.id === lessonId);
+const lesson = lessonIndex >= 0 ? window.LESSONS[lessonIndex] : null;
 
 function loadProgress() {
   try {
@@ -17,9 +18,35 @@ function saveProgress(progress) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
-function getCompletedSteps() {
+function lessonProgress(id) {
   const progress = loadProgress();
-  return new Set(progress[lessonId]?.completedSteps || []);
+  const completedSteps = progress[id]?.completedSteps || [];
+  return {
+    completedSteps,
+    percent: Math.round((completedSteps.length / 4) * 100),
+    complete: completedSteps.length === 4
+  };
+}
+
+function isLessonUnlocked(index) {
+  if (index === 0) return true;
+  if (index < 0) return false;
+
+  const previousLesson = window.LESSONS[index - 1];
+  return lessonProgress(previousLesson.id).complete;
+}
+
+function hasLessonContent(item) {
+  return Boolean(
+    item?.concept &&
+    item?.example &&
+    item?.practice &&
+    item?.challenge
+  );
+}
+
+function getCompletedSteps() {
+  return new Set(lessonProgress(lessonId).completedSteps);
 }
 
 function persistCompletedSteps(completed) {
@@ -41,10 +68,30 @@ function setHtml(id, html) {
   document.getElementById(id).innerHTML = html;
 }
 
+function renderUnavailable(title, message) {
+  document.body.innerHTML = `
+    <main class="empty-state">
+      <h1>${title}</h1>
+      <p>${message}</p>
+      <a class="primary-link" href="index.html">Back to dashboard</a>
+    </main>
+  `;
+}
+
 function renderLesson() {
-  if (!lesson || lesson.status !== "available") {
-    document.body.innerHTML = '<main class="empty-state"><h1>Lesson unavailable</h1><p>This lesson is not available yet.</p><a class="primary-link" href="index.html">Back to dashboard</a></main>';
-    return;
+  if (!lesson) {
+    renderUnavailable("Lesson unavailable", "This lesson could not be found.");
+    return false;
+  }
+
+  if (!isLessonUnlocked(lessonIndex)) {
+    renderUnavailable("Lesson locked", "Complete the previous lesson to unlock this one.");
+    return false;
+  }
+
+  if (!hasLessonContent(lesson)) {
+    renderUnavailable("Lesson coming next", `${lesson.title} is unlocked, but its interactive content has not been added yet.`);
+    return false;
   }
 
   document.title = `Python Learning Lab — ${lesson.title}`;
@@ -73,6 +120,7 @@ function renderLesson() {
 
   restoreCompletedUi();
   updateProgress();
+  return true;
 }
 
 async function bootPython() {
@@ -253,9 +301,7 @@ async function evaluateExercise(kind) {
   }
 }
 
-if (lesson && lesson.status === "available") {
-  renderLesson();
-
+if (renderLesson()) {
   document.querySelectorAll(".complete-btn").forEach(btn => {
     btn.addEventListener("click", () => markComplete(btn.dataset.complete));
   });
@@ -280,6 +326,4 @@ if (lesson && lesson.status === "available") {
   });
 
   bootPython();
-} else {
-  renderLesson();
 }
