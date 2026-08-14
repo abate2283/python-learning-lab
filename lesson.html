@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Learning Lab</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <a class="back-link" href="index.html">← Python Learning Lab</a>
+      <p class="eyebrow" id="lessonEyebrow">Python Foundations</p>
+      <h1 id="lessonTitle">Loading lesson…</h1>
+      <p class="subtitle" id="lessonSubtitle"></p>
+    </div>
+    <div class="status" id="pythonStatus">Loading Python…</div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="progress-card">
+        <span>Lesson progress</span>
+        <strong id="progressText">0%</strong>
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+      </div>
+
+      <nav>
+        <button class="nav-item active" data-target="concept">1. Concept</button>
+        <button class="nav-item" data-target="example">2. Example</button>
+        <button class="nav-item" data-target="practice">3. Practice</button>
+        <button class="nav-item" data-target="challenge">4. Challenge</button>
+      </nav>
+    </aside>
+
+    <section class="content">
+      <article id="concept" class="lesson-card">
+        <span class="step-badge">1</span>
+        <h2 id="conceptTitle"></h2>
+        <p id="conceptBody"></p>
+        <div class="code-sample"><pre><code id="conceptCode"></code></pre></div>
+        <div class="callout" id="conceptCallout"></div>
+        <button class="complete-btn" data-complete="concept">I understand this</button>
+      </article>
+
+      <article id="example" class="lesson-card">
+        <span class="step-badge">2</span>
+        <h2 id="exampleTitle"></h2>
+        <p id="exampleBody"></p>
+        <div class="code-sample"><pre><code id="exampleCode"></code></pre></div>
+        <p>The output would be:</p>
+        <pre class="output-example" id="exampleOutput"></pre>
+        <button class="complete-btn" data-complete="example">Got it</button>
+      </article>
+
+      <article id="practice" class="lesson-card">
+        <span class="step-badge">3</span>
+        <h2 id="practiceTitle"></h2>
+        <p id="practicePrompt"></p>
+        <p class="hint" id="practiceHint"></p>
+
+        <label for="practiceCode">Your Python code</label>
+        <textarea id="practiceCode" spellcheck="false"></textarea>
+
+        <div class="actions">
+          <button id="runPractice" class="run-btn">▶ Run code</button>
+          <button id="resetPractice" class="secondary-btn">Reset</button>
+        </div>
+
+        <div class="result-grid">
+          <div>
+            <h3>Output</h3>
+            <pre id="practiceOutput" class="terminal">Click “Run code”.</pre>
+          </div>
+          <div>
+            <h3>Feedback</h3>
+            <div id="practiceFeedback" class="feedback neutral">Your feedback will appear here.</div>
+          </div>
+        </div>
+      </article>
+
+      <article id="challenge" class="lesson-card">
+        <span class="step-badge">4</span>
+        <h2 id="challengeTitle"></h2>
+        <p id="challengePrompt"></p>
+
+        <textarea id="challengeCode" spellcheck="false"></textarea>
+
+        <div class="actions">
+          <button id="runChallenge" class="run-btn">▶ Check challenge</button>
+          <button id="showHint" class="secondary-btn">Show hint</button>
+        </div>
+
+        <div id="challengeHint" class="callout hidden"></div>
+
+        <div class="result-grid">
+          <div>
+            <h3>Output</h3>
+            <pre id="challengeOutput" class="terminal">Run your challenge when ready.</pre>
+          </div>
+          <div>
+            <h3>Feedback</h3>
+            <div id="challengeFeedback" class="feedback neutral">We will check your variables and output.</div>
+          </div>
+        </div>
+      </article>
+
+      <section class="completion-card" id="completionCard">
+        <h2>🎉 Lesson complete!</h2>
+        <p id="completionText">You completed this lesson.</p>
+        <a class="primary-link" href="index.html">Back to dashboard</a>
+      </section>
+    </section>
+  </main>
+
+  <script src="lessons.js"></script>
+  <script src="lesson-engine.js"></script>
+</body>
+</html>
