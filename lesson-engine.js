@@ -165,21 +165,48 @@ function restoreCompletedUi() {
 
 async function executePython(code) {
   if (!pyodide) {
-    return { ok: false, output: "Python is still loading. Try again in a moment." };
+    return { ok: false, output: "Python is still loading. Try again in a moment.", inputs: [] };
   }
 
   const wrapped = `
-import sys, io, traceback
+import sys, io, traceback, builtins
+from js import window
+
 _buffer = io.StringIO()
 _old_stdout = sys.stdout
+_old_input = builtins.input
+_captured_inputs = []
+
+# Browser-backed replacement for Python input().
+# Each answer is recorded so the exercise verifier can replay it
+# without asking the learner the same question a second time.
+def _browser_input(prompt=""):
+    value = window.prompt(str(prompt))
+    if value is None:
+        raise EOFError("Input was cancelled by the learner.")
+    value = str(value)
+    _captured_inputs.append(value)
+    print(f"{prompt}{value}")
+    return value
+
 sys.stdout = _buffer
+builtins.input = _browser_input
 try:
     exec(${JSON.stringify(code)}, globals())
-    _result = {"ok": True, "output": _buffer.getvalue()}
+    _result = {
+        "ok": True,
+        "output": _buffer.getvalue(),
+        "inputs": _captured_inputs
+    }
 except Exception:
-    _result = {"ok": False, "output": traceback.format_exc()}
+    _result = {
+        "ok": False,
+        "output": traceback.format_exc(),
+        "inputs": _captured_inputs
+    }
 finally:
     sys.stdout = _old_stdout
+    builtins.input = _old_input
 _result
 `;
 
@@ -189,7 +216,7 @@ _result
     proxy.destroy();
     return result;
   } catch (error) {
-    return { ok: false, output: String(error) };
+    return { ok: false, output: String(error), inputs: [] };
   }
 }
 
@@ -199,23 +226,37 @@ function setFeedback(elementId, type, html) {
   el.innerHTML = html;
 }
 
-async function verifyExercise(code, output, exercise) {
+async function verifyExercise(code, output, exercise, inputs = []) {
   const requirementsJson = JSON.stringify(exercise.requirements || []);
   const mustPrintJson = JSON.stringify(exercise.mustPrint || []);
+  const inputsJson = JSON.stringify(inputs || []);
 
   const checker = `
-import sys, io, json
+import sys, io, json, builtins
 _code = ${JSON.stringify(code)}
 _requirements = json.loads(${JSON.stringify(requirementsJson)})
 _must_print = json.loads(${JSON.stringify(mustPrintJson)})
+_saved_inputs = json.loads(${JSON.stringify(inputsJson)})
+_input_iter = iter(_saved_inputs)
 _ns = {}
 _tmp = io.StringIO()
 _old = sys.stdout
+_old_input = builtins.input
+
+# Replay the learner's first-run answers during verification.
+def _replay_input(prompt=""):
+    try:
+        return next(_input_iter)
+    except StopIteration:
+        raise EOFError("No saved input remains for this exercise.")
+
 sys.stdout = _tmp
+builtins.input = _replay_input
 try:
     exec(_code, _ns)
 finally:
     sys.stdout = _old
+    builtins.input = _old_input
 
 def _type_ok(value, expected):
     if expected == "str":
@@ -284,7 +325,7 @@ async function evaluateExercise(kind) {
   }
 
   try {
-    const verification = await verifyExercise(code, result.output, exercise);
+    const verification = await verifyExercise(code, result.output, exercise, result.inputs || []);
     const checks = verification.checks || [];
     const printChecks = verification.print_checks || [];
     const passed = checks.every(([, ok]) => ok) && printChecks.every(([, ok]) => ok);
