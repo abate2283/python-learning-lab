@@ -19,24 +19,33 @@ function lessonProgress(lessonId) {
   };
 }
 
+function isLessonUnlocked(index) {
+  if (index === 0) return true;
+
+  const previousLesson = window.LESSONS[index - 1];
+  return lessonProgress(previousLesson.id).complete;
+}
+
 function renderDashboard() {
   const grid = document.getElementById("lessonGrid");
   grid.innerHTML = "";
 
   let completedCount = 0;
 
-  window.LESSONS.forEach(lesson => {
+  window.LESSONS.forEach((lesson, index) => {
     const state = lessonProgress(lesson.id);
+    const unlocked = isLessonUnlocked(index);
+
     if (state.complete) completedCount += 1;
 
-    const card = document.createElement(lesson.status === "available" ? "a" : "article");
-    card.className = `lesson-tile ${lesson.status === "locked" ? "locked" : ""}`;
+    const card = document.createElement(unlocked ? "a" : "article");
+    card.className = `lesson-tile ${unlocked ? "" : "locked"}`;
 
-    if (lesson.status === "available") {
+    if (unlocked) {
       card.href = `lesson.html?id=${encodeURIComponent(lesson.id)}`;
     }
 
-    const statusText = lesson.status === "locked"
+    const statusText = !unlocked
       ? "Locked"
       : state.complete
         ? "Complete ✓"
