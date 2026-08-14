@@ -88,7 +88,42 @@ window.LESSONS = [
     number: 3,
     title: "Input & Output",
     description: "Read user input and display useful results.",
-    status: "locked"
+    status: "locked",
+    concept: {
+      title: "Getting input from the user",
+      body: 'The <strong>input()</strong> function pauses your program and lets the user type a response. The response returned by <code>input()</code> is a string.',
+      code: 'name = input("What is your name? ")',
+      callout: '<strong>Important:</strong> Even if the user types numbers, <code>input()</code> returns text unless you convert it.'
+    },
+    example: {
+      title: "Ask, store, and print",
+      body: "You can save what the user types in a variable and then use that value in your output.",
+      code: 'name = input("What is your name? ")\nprint("Hello", name)',
+      output: "What is your name? Daniel\nHello Daniel"
+    },
+    practice: {
+      title: "Practice: ask for a name",
+      prompt: 'Use <code>input()</code> to ask the user for their name. Store the answer in a variable named <code>name</code>, then print the value.',
+      hint: 'Start with <code>name = input("What is your name? ")</code>.',
+      starterCode: 'name = input("What is your name? ")\nprint(name)',
+      requirements: [
+        { name: "name", type: "str", nonEmpty: true }
+      ],
+      mustPrint: ["name"],
+      success: 'Excellent! You collected user input, stored it in <code>name</code>, and printed the response.'
+    },
+    challenge: {
+      title: "Mini challenge: personalize the output",
+      prompt: 'Ask the user for their <code>first_name</code> and <code>favorite_food</code>. Then print both answers so the user can see what they entered.',
+      starterCode: 'first_name = input("What is your first name? ")\nfavorite_food = input("What is your favorite food? ")\n\nprint(first_name)\nprint(favorite_food)',
+      hint: 'Use <code>input()</code> twice—once for each variable—then print both variables.',
+      requirements: [
+        { name: "first_name", type: "str", nonEmpty: true },
+        { name: "favorite_food", type: "str", nonEmpty: true }
+      ],
+      mustPrint: ["first_name", "favorite_food"],
+      success: 'Challenge passed! 🎉 You asked for two pieces of input and displayed both answers.'
+    }
   },
   {
     id: "module-challenge",
