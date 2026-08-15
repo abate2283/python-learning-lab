@@ -130,6 +130,45 @@ window.LESSONS = [
     number: 4,
     title: "Module Challenge",
     description: "Combine strings, numbers, input, and output.",
-    status: "locked"
+    status: "locked",
+    concept: {
+      title: "Module 1 mastery check",
+      body: "This challenge combines everything you practiced in Module 1: string variables, numeric variables, user input, and printed output.",
+      code: 'name = input("What is your name? ")\nage = 12\nprint(name)\nprint(age)',
+      callout: '<strong>Goal:</strong> Build one small program that stores text, stores a number, asks the user for information, and displays the results.'
+    },
+    example: {
+      title: "Put the pieces together",
+      body: "A complete program can mix values that come from the user with values you create directly in code.",
+      code: 'name = input("What is your name? ")\nage = 12\nfavorite_food = input("What is your favorite food? ")\n\nprint(name)\nprint(age)\nprint(favorite_food)',
+      output: "What is your name? Daniel\nWhat is your favorite food? Pizza\nDaniel\n12\nPizza"
+    },
+    practice: {
+      title: "Warm-up: combine three variables",
+      prompt: 'Ask the user for <code>name</code>, create an integer variable named <code>age</code>, and ask for <code>favorite_food</code>. Print all three values.',
+      hint: 'Use <code>input()</code> for <code>name</code> and <code>favorite_food</code>. Give <code>age</code> a whole-number value directly in your code.',
+      starterCode: 'name = input("What is your name? ")\nage = 12\nfavorite_food = input("What is your favorite food? ")\n\nprint(name)\nprint(age)\nprint(favorite_food)',
+      requirements: [
+        { name: "name", type: "str", nonEmpty: true },
+        { name: "age", type: "int", min: 1 },
+        { name: "favorite_food", type: "str", nonEmpty: true }
+      ],
+      mustPrint: ["name", "age", "favorite_food"],
+      success: 'Great work! You combined user input, a numeric variable, and output in one program.'
+    },
+    challenge: {
+      title: "Module 1 final challenge",
+      prompt: 'Build a short profile program. Ask for <code>first_name</code> and <code>city</code>, create an integer variable named <code>age</code>, and ask for <code>favorite_food</code>. Print all four values. Do not change the required variable names.',
+      starterCode: 'first_name = input("What is your first name? ")\ncity = input("What city do you live in? ")\nage = 0\nfavorite_food = input("What is your favorite food? ")\n\nprint(first_name)\nprint(city)\nprint(age)\nprint(favorite_food)',
+      hint: 'Use <code>input()</code> for the three text variables. Replace <code>0</code> with any positive whole number for <code>age</code>. Then print all four variables.',
+      requirements: [
+        { name: "first_name", type: "str", nonEmpty: true },
+        { name: "city", type: "str", nonEmpty: true },
+        { name: "age", type: "int", min: 1 },
+        { name: "favorite_food", type: "str", nonEmpty: true }
+      ],
+      mustPrint: ["first_name", "city", "age", "favorite_food"],
+      success: 'Module 1 mastered! 🏆 You combined strings, numbers, input, and output in one complete Python program.'
+    }
   }
 ];

@@ -177,9 +177,6 @@ _old_stdout = sys.stdout
 _old_input = builtins.input
 _captured_inputs = []
 
-# Browser-backed replacement for Python input().
-# Each answer is recorded so the exercise verifier can replay it
-# without asking the learner the same question a second time.
 def _browser_input(prompt=""):
     value = window.prompt(str(prompt))
     if value is None:
@@ -243,7 +240,6 @@ _tmp = io.StringIO()
 _old = sys.stdout
 _old_input = builtins.input
 
-# Replay the learner's first-run answers during verification.
 def _replay_input(prompt=""):
     try:
         return next(_input_iter)
@@ -275,6 +271,10 @@ for req in _requirements:
     ok = exists and _type_ok(value, req.get("type"))
     if ok and req.get("nonEmpty"):
         ok = bool(str(value).strip())
+    if ok and req.get("min") is not None:
+        ok = value >= req["min"]
+    if ok and req.get("max") is not None:
+        ok = value <= req["max"]
     _checks.append((name, ok, value if exists else None))
 
 _print_checks = []
