@@ -150,7 +150,7 @@ window.LESSONS = [
       starterCode: 'name = input("What is your name? ")\nage = 12\nfavorite_food = input("What is your favorite food? ")\n\nprint(name)\nprint(age)\nprint(favorite_food)',
       requirements: [
         { name: "name", type: "str", nonEmpty: true },
-        { name: "age", type: "int" },
+        { name: "age", type: "int", min: 1 },
         { name: "favorite_food", type: "str", nonEmpty: true }
       ],
       mustPrint: ["name", "age", "favorite_food"],
@@ -160,11 +160,11 @@ window.LESSONS = [
       title: "Module 1 final challenge",
       prompt: 'Build a short profile program. Ask for <code>first_name</code> and <code>city</code>, create an integer variable named <code>age</code>, and ask for <code>favorite_food</code>. Print all four values. Do not change the required variable names.',
       starterCode: 'first_name = input("What is your first name? ")\ncity = input("What city do you live in? ")\nage = 0\nfavorite_food = input("What is your favorite food? ")\n\nprint(first_name)\nprint(city)\nprint(age)\nprint(favorite_food)',
-      hint: 'Use <code>input()</code> for the three text variables. Replace <code>0</code> with any whole number for <code>age</code>. Then print all four variables.',
+      hint: 'Use <code>input()</code> for the three text variables. Replace <code>0</code> with any positive whole number for <code>age</code>. Then print all four variables.',
       requirements: [
         { name: "first_name", type: "str", nonEmpty: true },
         { name: "city", type: "str", nonEmpty: true },
-        { name: "age", type: "int" },
+        { name: "age", type: "int", min: 1 },
         { name: "favorite_food", type: "str", nonEmpty: true }
       ],
       mustPrint: ["first_name", "city", "age", "favorite_food"],
