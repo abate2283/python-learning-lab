@@ -1,171 +1,86 @@
-let pyodide = null;
-const completed = new Set();
+const STORAGE_KEY = "pythonLearningLabProgress";
 
-async function bootPython() {
-  const status = document.getElementById("pythonStatus");
+function loadProgress() {
   try {
-    pyodide = await loadPyodide();
-    status.textContent = "Python ready ✓";
-  } catch (error) {
-    status.textContent = "Python failed to load";
-    console.error(error);
-  }
-}
-
-function markComplete(step) {
-  completed.add(step);
-  const percent = Math.round((completed.size / 4) * 100);
-  document.getElementById("progressText").textContent = `${percent}%`;
-  document.getElementById("progressBar").style.width = `${percent}%`;
-  if (completed.size === 4) {
-    document.getElementById("completionCard").classList.add("show");
-  }
-}
-
-async function executePython(code) {
-  if (!pyodide) {
-    return { ok: false, output: "Python is still loading. Try again in a moment." };
-  }
-
-  const wrapped = `
-import sys, io, traceback
-_buffer = io.StringIO()
-_old_stdout = sys.stdout
-sys.stdout = _buffer
-try:
-    exec(${JSON.stringify(code)}, globals())
-    _result = {"ok": True, "output": _buffer.getvalue()}
-except Exception:
-    _result = {"ok": False, "output": traceback.format_exc()}
-finally:
-    sys.stdout = _old_stdout
-_result
-`;
-
-  try {
-    const proxy = await pyodide.runPythonAsync(wrapped);
-    const result = proxy.toJs({ dict_converter: Object.fromEntries });
-    proxy.destroy();
-    return result;
-  } catch (error) {
-    return { ok: false, output: String(error) };
-  }
-}
-
-function setFeedback(elementId, type, html) {
-  const el = document.getElementById(elementId);
-  el.className = `feedback ${type}`;
-  el.innerHTML = html;
-}
-
-async function evaluatePractice() {
-  const code = document.getElementById("practiceCode").value;
-  const output = document.getElementById("practiceOutput");
-  output.textContent = "Running…";
-
-  const result = await executePython(code);
-  output.textContent = result.output || "(No output)";
-
-  if (!result.ok) {
-    setFeedback("practiceFeedback", "error", "<strong>Not quite yet.</strong><br>Your code produced an error. Read the last line of the output and try again.");
-    return;
-  }
-
-  try {
-    const checker = `
-_code = ${JSON.stringify(code)}
-_ns = {}
-exec(_code, _ns)
-(
-    "favorite_food" in _ns
-    and isinstance(_ns["favorite_food"], str)
-    and bool(_ns["favorite_food"].strip())
-)
-`;
-    const passed = pyodide.runPython(checker);
-
-    if (passed) {
-      setFeedback("practiceFeedback", "success", "<strong>Excellent!</strong><br>You created <code>favorite_food</code> and stored a non-empty string in it.");
-      markComplete("practice");
-    } else {
-      setFeedback("practiceFeedback", "error", "<strong>Almost.</strong><br>Create a variable named <code>favorite_food</code> and give it a text value inside quotation marks.");
-    }
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
   } catch {
-    setFeedback("practiceFeedback", "error", "Your code ran, but the required <code>favorite_food</code> string variable was not found.");
+    return {};
   }
 }
 
-async function evaluateChallenge() {
-  const code = document.getElementById("challengeCode").value;
-  const output = document.getElementById("challengeOutput");
-  output.textContent = "Checking…";
+function lessonProgress(lessonId) {
+  const progress = loadProgress();
+  const lesson = progress[lessonId];
+  const completedSteps = lesson?.completedSteps || [];
+  return {
+    completedSteps,
+    percent: Math.round((completedSteps.length / 4) * 100),
+    complete: completedSteps.length === 4
+  };
+}
 
-  const result = await executePython(code);
-  output.textContent = result.output || "(No output)";
+function isLessonUnlocked(index) {
+  if (index === 0) return true;
 
-  if (!result.ok) {
-    setFeedback("challengeFeedback", "error", "<strong>There is a Python error.</strong><br>Use the output to find it, fix it, then run the challenge again.");
-    return;
-  }
+  const previousLesson = window.LESSONS[index - 1];
+  return lessonProgress(previousLesson.id).complete;
+}
 
-  const checker = `
-_code = ${JSON.stringify(code)}
-_ns = {}
-exec(_code, _ns)
-_ok_vars = (
-    "first_name" in _ns and isinstance(_ns["first_name"], str) and bool(_ns["first_name"].strip())
-    and "city" in _ns and isinstance(_ns["city"], str) and bool(_ns["city"].strip())
-)
-_printed = (
-    str(_ns.get("first_name", "")) in ${JSON.stringify(result.output)}
-    and str(_ns.get("city", "")) in ${JSON.stringify(result.output)}
-)
-(_ok_vars, _printed)
-`;
+function renderDashboard() {
+  const grid = document.getElementById("lessonGrid");
+  grid.innerHTML = "";
 
-  try {
-    const proxy = pyodide.runPython(checker);
-    const [okVars, printed] = proxy.toJs();
-    proxy.destroy();
+  let completedCount = 0;
 
-    if (okVars && printed) {
-      setFeedback("challengeFeedback", "success", "<strong>Challenge passed! 🎉</strong><br>You created both required string variables and printed their values.");
-      markComplete("challenge");
-    } else if (!okVars) {
-      setFeedback("challengeFeedback", "error", "Both <code>first_name</code> and <code>city</code> must contain non-empty string values.");
-    } else {
-      setFeedback("challengeFeedback", "error", "Your variables look good. Now make sure you print both values.");
+  window.LESSONS.forEach((lesson, index) => {
+    const state = lessonProgress(lesson.id);
+    const unlocked = isLessonUnlocked(index);
+
+    if (state.complete) completedCount += 1;
+
+    const card = document.createElement(unlocked ? "a" : "article");
+    card.className = `lesson-tile ${unlocked ? "" : "locked"}`;
+
+    if (unlocked) {
+      card.href = `lesson.html?id=${encodeURIComponent(lesson.id)}`;
     }
-  } catch {
-    setFeedback("challengeFeedback", "error", "I could not verify the challenge yet. Check your variable names and try again.");
-  }
+
+    const statusText = !unlocked
+      ? "Locked"
+      : state.complete
+        ? "Complete ✓"
+        : state.percent > 0
+          ? `${state.percent}% complete`
+          : "Start →";
+
+    card.innerHTML = `
+      <div class="lesson-number">${String(lesson.number).padStart(2, "0")}</div>
+      <div class="lesson-tile-body">
+        <div class="lesson-title-row">
+          <h3>${lesson.title}</h3>
+          <span class="lesson-status ${state.complete ? "done" : ""}">${statusText}</span>
+        </div>
+        <p>${lesson.description}</p>
+        <div class="progress-track lesson-progress-track">
+          <div class="progress-bar" style="width: ${state.percent}%"></div>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  const total = window.LESSONS.length;
+  document.getElementById("moduleProgressText").textContent = `${completedCount} of ${total} lessons complete`;
+  document.getElementById("moduleProgressBar").style.width = `${Math.round((completedCount / total) * 100)}%`;
 }
 
-document.querySelectorAll(".complete-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    markComplete(btn.dataset.complete);
-    btn.textContent = "Completed ✓";
-    btn.disabled = true;
-  });
+document.getElementById("resetProgress").addEventListener("click", () => {
+  const confirmed = window.confirm("Reset all saved Python Learning Lab progress in this browser?");
+  if (!confirmed) return;
+
+  localStorage.removeItem(STORAGE_KEY);
+  renderDashboard();
 });
 
-document.querySelectorAll(".nav-item").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-});
-
-document.getElementById("runPractice").addEventListener("click", evaluatePractice);
-document.getElementById("runChallenge").addEventListener("click", evaluateChallenge);
-document.getElementById("resetPractice").addEventListener("click", () => {
-  document.getElementById("practiceCode").value = 'favorite_food = "Pizza"\nprint(favorite_food)';
-  document.getElementById("practiceOutput").textContent = 'Click “Run code”.';
-  setFeedback("practiceFeedback", "neutral", "Your feedback will appear here.");
-});
-document.getElementById("showHint").addEventListener("click", () => {
-  document.getElementById("challengeHint").classList.toggle("hidden");
-});
-
-bootPython();
+renderDashboard();

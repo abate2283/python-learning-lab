@@ -3,133 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python Learning Lab — Strings</title>
+  <title>Python Learning Lab</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar dashboard-topbar">
     <div>
       <p class="eyebrow">Python Learning Lab</p>
-      <h1>Lesson 1: String Variables</h1>
-      <p class="subtitle">Learn it, try it, run it, and get immediate feedback.</p>
+      <h1>Learn Python by doing.</h1>
+      <p class="subtitle">Short explanations, real code, immediate feedback, and mastery one lesson at a time.</p>
     </div>
-    <div class="status" id="pythonStatus">Loading Python…</div>
   </header>
 
-  <main class="layout">
-    <aside class="sidebar">
-      <div class="progress-card">
-        <span>Lesson progress</span>
-        <strong id="progressText">0%</strong>
-        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+  <main class="dashboard-shell">
+    <section class="dashboard-summary">
+      <div>
+        <p class="eyebrow dashboard-eyebrow">Python Foundations</p>
+        <h2>Module 1</h2>
+        <p class="dashboard-copy">Build a foundation with variables, input, output, and a hands-on module challenge.</p>
       </div>
 
-      <nav>
-        <button class="nav-item active" data-target="concept">1. Concept</button>
-        <button class="nav-item" data-target="example">2. Example</button>
-        <button class="nav-item" data-target="practice">3. Practice</button>
-        <button class="nav-item" data-target="challenge">4. Challenge</button>
-      </nav>
-    </aside>
+      <div class="module-progress-card">
+        <span>Module progress</span>
+        <strong id="moduleProgressText">0 of 4 lessons complete</strong>
+        <div class="progress-track"><div id="moduleProgressBar" class="progress-bar"></div></div>
+      </div>
+    </section>
 
-    <section class="content">
-      <article id="concept" class="lesson-card">
-        <span class="step-badge">1</span>
-        <h2>What is a string?</h2>
-        <p>A <strong>string</strong> is text. In Python, text is surrounded by quotation marks.</p>
-        <div class="code-sample">
-          <code>first_name = "Daniel"</code>
+    <section>
+      <div class="section-heading">
+        <div>
+          <h2>Your lessons</h2>
+          <p>Complete each interactive lesson and your progress will stay saved in this browser.</p>
         </div>
-        <div class="callout">
-          <strong>Notice:</strong> <code>first_name</code> is the variable name and <code>"Daniel"</code> is the string value.
-        </div>
-        <button class="complete-btn" data-complete="concept">I understand this</button>
-      </article>
+        <button id="resetProgress" class="secondary-btn compact-btn">Reset progress</button>
+      </div>
 
-      <article id="example" class="lesson-card">
-        <span class="step-badge">2</span>
-        <h2>See it in action</h2>
-        <p>Python can store a string in a variable and print it later.</p>
-        <div class="code-sample">
-<pre><code>greeting = "Hello"
-name = "Daniel"
-
-print(greeting)
-print(name)</code></pre>
-        </div>
-        <p>The output would be:</p>
-        <div class="output-example">Hello<br>Daniel</div>
-        <button class="complete-btn" data-complete="example">Got it</button>
-      </article>
-
-      <article id="practice" class="lesson-card">
-        <span class="step-badge">3</span>
-        <h2>Practice: create a string variable</h2>
-        <p>Create a variable named <code>favorite_food</code>, set it equal to a string, then print it.</p>
-        <p class="hint">Example idea: <code>favorite_food = "Pizza"</code></p>
-
-        <label for="practiceCode">Your Python code</label>
-        <textarea id="practiceCode" spellcheck="false">favorite_food = "Pizza"
-print(favorite_food)</textarea>
-
-        <div class="actions">
-          <button id="runPractice" class="run-btn">▶ Run code</button>
-          <button id="resetPractice" class="secondary-btn">Reset</button>
-        </div>
-
-        <div class="result-grid">
-          <div>
-            <h3>Output</h3>
-            <pre id="practiceOutput" class="terminal">Click “Run code”.</pre>
-          </div>
-          <div>
-            <h3>Feedback</h3>
-            <div id="practiceFeedback" class="feedback neutral">Your feedback will appear here.</div>
-          </div>
-        </div>
-      </article>
-
-      <article id="challenge" class="lesson-card">
-        <span class="step-badge">4</span>
-        <h2>Mini challenge</h2>
-        <p>Create two string variables named <code>first_name</code> and <code>city</code>. Then print both values.</p>
-
-        <textarea id="challengeCode" spellcheck="false">first_name = ""
-city = ""
-
-print(first_name)
-print(city)</textarea>
-
-        <div class="actions">
-          <button id="runChallenge" class="run-btn">▶ Check challenge</button>
-          <button id="showHint" class="secondary-btn">Show hint</button>
-        </div>
-
-        <div id="challengeHint" class="callout hidden">
-          Put text inside the quotation marks, for example: <code>first_name = "Daniel"</code>.
-        </div>
-
-        <div class="result-grid">
-          <div>
-            <h3>Output</h3>
-            <pre id="challengeOutput" class="terminal">Run your challenge when ready.</pre>
-          </div>
-          <div>
-            <h3>Feedback</h3>
-            <div id="challengeFeedback" class="feedback neutral">We will check the variable names, string values, and print statements.</div>
-          </div>
-        </div>
-      </article>
-
-      <section class="completion-card" id="completionCard">
-        <h2>🎉 Lesson complete!</h2>
-        <p>You created and printed Python string variables.</p>
-        <p><strong>Next lesson idea:</strong> Numbers and numeric variables.</p>
-      </section>
+      <div id="lessonGrid" class="lesson-grid" aria-live="polite"></div>
     </section>
   </main>
 
+  <script src="lessons.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
