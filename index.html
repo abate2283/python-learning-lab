@@ -16,6 +16,22 @@
   </header>
 
   <main class="dashboard-shell">
+    <section class="profile-card" aria-labelledby="welcomeLearner">
+      <div>
+        <p class="eyebrow dashboard-eyebrow">Learner profile</p>
+        <h2 id="welcomeLearner">Welcome back!</h2>
+        <p>Your lesson progress is saved separately for this learner on this browser.</p>
+      </div>
+      <div class="profile-controls">
+        <label for="profileSelect">Current learner</label>
+        <select id="profileSelect" aria-label="Current learner"></select>
+        <div class="actions profile-actions">
+          <button id="addProfile" class="secondary-btn compact-btn">+ Add learner</button>
+          <button id="renameProfile" class="secondary-btn compact-btn">Rename</button>
+        </div>
+      </div>
+    </section>
+
     <section class="dashboard-summary">
       <div>
         <p class="eyebrow dashboard-eyebrow">Python Foundations</p>
@@ -36,13 +52,14 @@
           <h2>Your lessons</h2>
           <p>Complete each interactive lesson and your progress will stay saved in this browser.</p>
         </div>
-        <button id="resetProgress" class="secondary-btn compact-btn">Reset progress</button>
+        <button id="resetProgress" class="secondary-btn compact-btn">Reset learner progress</button>
       </div>
 
       <div id="lessonGrid" class="lesson-grid" aria-live="polite"></div>
     </section>
   </main>
 
+  <script src="profile-storage.js"></script>
   <script src="lessons.js"></script>
   <script src="app.js"></script>
 </body>
