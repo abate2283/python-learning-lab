@@ -1,11 +1,5 @@
-const STORAGE_KEY = "pythonLearningLabProgress";
-
 function loadProgress() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch {
-    return {};
-  }
+  return window.PythonLabStorage.getProgress();
 }
 
 function lessonProgress(lessonId) {
@@ -26,7 +20,21 @@ function isLessonUnlocked(index) {
   return lessonProgress(previousLesson.id).complete;
 }
 
+function renderProfileControls() {
+  const active = window.PythonLabStorage.getActiveProfile();
+  const profiles = window.PythonLabStorage.getProfiles();
+  const select = document.getElementById("profileSelect");
+
+  select.innerHTML = profiles
+    .map(profile => `<option value="${profile.id}" ${profile.id === active.id ? "selected" : ""}>${profile.name}</option>`)
+    .join("");
+
+  document.getElementById("welcomeLearner").textContent = `Welcome back, ${active.name}!`;
+}
+
 function renderDashboard() {
+  renderProfileControls();
+
   const grid = document.getElementById("lessonGrid");
   grid.innerHTML = "";
 
@@ -75,11 +83,42 @@ function renderDashboard() {
   document.getElementById("moduleProgressBar").style.width = `${Math.round((completedCount / total) * 100)}%`;
 }
 
+document.getElementById("profileSelect").addEventListener("change", event => {
+  window.PythonLabStorage.setActiveProfile(event.target.value);
+  renderDashboard();
+});
+
+document.getElementById("addProfile").addEventListener("click", () => {
+  const name = window.prompt("Learner name:");
+  if (name === null) return;
+
+  try {
+    window.PythonLabStorage.createProfile(name);
+    renderDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+});
+
+document.getElementById("renameProfile").addEventListener("click", () => {
+  const active = window.PythonLabStorage.getActiveProfile();
+  const name = window.prompt("Rename learner:", active.name);
+  if (name === null) return;
+
+  try {
+    window.PythonLabStorage.renameActiveProfile(name);
+    renderDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+});
+
 document.getElementById("resetProgress").addEventListener("click", () => {
-  const confirmed = window.confirm("Reset all saved Python Learning Lab progress in this browser?");
+  const active = window.PythonLabStorage.getActiveProfile();
+  const confirmed = window.confirm(`Reset all saved progress for ${active.name} on this browser?`);
   if (!confirmed) return;
 
-  localStorage.removeItem(STORAGE_KEY);
+  window.PythonLabStorage.resetActiveProgress();
   renderDashboard();
 });
 

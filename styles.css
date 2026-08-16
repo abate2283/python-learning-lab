@@ -173,6 +173,31 @@ a.lesson-tile:hover { transform: translateY(-2px); border-color: #b9c5e7; box-sh
 .lesson-progress-track { height: 6px; }
 .empty-state { width: min(640px, 90vw); margin: 90px auto; text-align: center; }
 
+.learner-profile-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 24px;
+  align-items: center;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(25, 35, 65, .06);
+}
+.learner-profile-card h2 { margin: 4px 0 8px; }
+.profile-actions label { margin: 0 0 8px; color: var(--muted); font-size: .88rem; }
+.profile-actions select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #aeb9cc;
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+.profile-actions select:focus { outline: 3px solid rgba(49,87,213,.15); border-color: var(--accent); }
+.profile-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
 @media (max-width: 760px) {
   .topbar { align-items: flex-start; flex-direction: column; }
   .layout { grid-template-columns: 1fr; }
@@ -184,4 +209,5 @@ a.lesson-tile:hover { transform: translateY(-2px); border-color: #b9c5e7; box-sh
   .lesson-tile { grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 16px; }
   .lesson-number { width: 42px; height: 42px; }
   .lesson-title-row { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .learner-profile-card { grid-template-columns: 1fr; }
 }
