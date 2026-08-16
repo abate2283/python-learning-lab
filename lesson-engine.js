@@ -1,21 +1,16 @@
 let pyodide = null;
 
-const STORAGE_KEY = "pythonLearningLabProgress";
 const params = new URLSearchParams(window.location.search);
 const lessonId = params.get("id") || "string-variables";
 const lessonIndex = window.LESSONS.findIndex(item => item.id === lessonId);
 const lesson = lessonIndex >= 0 ? window.LESSONS[lessonIndex] : null;
 
 function loadProgress() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch {
-    return {};
-  }
+  return window.PythonLabStorage.getProgress();
 }
 
 function saveProgress(progress) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  window.PythonLabStorage.saveProgress(progress);
 }
 
 function lessonProgress(id) {
@@ -28,21 +23,45 @@ function lessonProgress(id) {
   };
 }
 
-function isLessonUnlocked(index) {
+function lessonsForModule(moduleId) {
+  return window.LESSONS.filter(item => item.moduleId === moduleId);
+}
+
+function moduleProgress(moduleId) {
+  const lessons = lessonsForModule(moduleId);
+  const completed = lessons.filter(item => lessonProgress(item.id).complete).length;
+  return {
+    completed,
+    total: lessons.length,
+    complete: lessons.length > 0 && completed === lessons.length
+  };
+}
+
+function isModuleUnlocked(moduleId) {
+  const moduleIndex = window.MODULES.findIndex(item => item.id === moduleId);
+  if (moduleIndex === 0) return true;
+  if (moduleIndex < 0) return false;
+
+  const module = window.MODULES[moduleIndex];
+  if (module.testUnlocked) return true;
+
+  const previousModule = window.MODULES[moduleIndex - 1];
+  return moduleProgress(previousModule.id).complete;
+}
+
+function isLessonUnlocked(item) {
+  if (!item || !isModuleUnlocked(item.moduleId)) return false;
+
+  const moduleLessons = lessonsForModule(item.moduleId);
+  const index = moduleLessons.findIndex(candidate => candidate.id === item.id);
   if (index === 0) return true;
   if (index < 0) return false;
 
-  const previousLesson = window.LESSONS[index - 1];
-  return lessonProgress(previousLesson.id).complete;
+  return lessonProgress(moduleLessons[index - 1].id).complete;
 }
 
 function hasLessonContent(item) {
-  return Boolean(
-    item?.concept &&
-    item?.example &&
-    item?.practice &&
-    item?.challenge
-  );
+  return Boolean(item?.concept && item?.example && item?.practice && item?.challenge);
 }
 
 function getCompletedSteps() {
@@ -52,8 +71,10 @@ function getCompletedSteps() {
 function persistCompletedSteps(completed) {
   const progress = loadProgress();
   progress[lessonId] = {
+    ...(progress[lessonId] || {}),
     completedSteps: [...completed],
-    completed: completed.size === 4
+    completed: completed.size === 4,
+    updatedAt: new Date().toISOString()
   };
   saveProgress(progress);
 }
@@ -84,8 +105,8 @@ function renderLesson() {
     return false;
   }
 
-  if (!isLessonUnlocked(lessonIndex)) {
-    renderUnavailable("Lesson locked", "Complete the previous lesson to unlock this one.");
+  if (!isLessonUnlocked(lesson)) {
+    renderUnavailable("Lesson locked", "Complete the previous lesson in this module to unlock this one.");
     return false;
   }
 
@@ -94,7 +115,9 @@ function renderLesson() {
     return false;
   }
 
+  const module = window.MODULES.find(item => item.id === lesson.moduleId);
   document.title = `Python Learning Lab — ${lesson.title}`;
+  setText("lessonEyebrow", module ? `Module ${module.number} · ${module.title}` : "Python Learning Lab");
   setText("lessonTitle", `Lesson ${lesson.number}: ${lesson.title}`);
   setText("lessonSubtitle", lesson.description);
 
@@ -143,7 +166,7 @@ function updateProgress() {
 
   if (completed.size === 4) {
     document.getElementById("completionCard").classList.add("show");
-    setText("completionText", `You completed ${lesson.title}. Your progress is saved in this browser.`);
+    setText("completionText", `You completed ${lesson.title}. Your progress is saved for the current learner on this browser.`);
   }
 }
 
@@ -177,9 +200,6 @@ _old_stdout = sys.stdout
 _old_input = builtins.input
 _captured_inputs = []
 
-# Browser-backed replacement for Python input().
-# Each answer is recorded so the exercise verifier can replay it
-# without asking the learner the same question a second time.
 def _browser_input(prompt=""):
     value = window.prompt(str(prompt))
     if value is None:
@@ -192,7 +212,8 @@ def _browser_input(prompt=""):
 sys.stdout = _buffer
 builtins.input = _browser_input
 try:
-    exec(${JSON.stringify(code)}, globals())
+    _ns = {}
+    exec(${JSON.stringify(code)}, _ns)
     _result = {
         "ok": True,
         "output": _buffer.getvalue(),
@@ -230,33 +251,15 @@ async function verifyExercise(code, output, exercise, inputs = []) {
   const requirementsJson = JSON.stringify(exercise.requirements || []);
   const mustPrintJson = JSON.stringify(exercise.mustPrint || []);
   const inputsJson = JSON.stringify(inputs || []);
+  const hiddenTestsJson = JSON.stringify(exercise.hiddenTests || []);
 
   const checker = `
-import sys, io, json, builtins
+import sys, io, json, builtins, traceback
 _code = ${JSON.stringify(code)}
 _requirements = json.loads(${JSON.stringify(requirementsJson)})
 _must_print = json.loads(${JSON.stringify(mustPrintJson)})
 _saved_inputs = json.loads(${JSON.stringify(inputsJson)})
-_input_iter = iter(_saved_inputs)
-_ns = {}
-_tmp = io.StringIO()
-_old = sys.stdout
-_old_input = builtins.input
-
-# Replay the learner's first-run answers during verification.
-def _replay_input(prompt=""):
-    try:
-        return next(_input_iter)
-    except StopIteration:
-        raise EOFError("No saved input remains for this exercise.")
-
-sys.stdout = _tmp
-builtins.input = _replay_input
-try:
-    exec(_code, _ns)
-finally:
-    sys.stdout = _old
-    builtins.input = _old_input
+_hidden_tests = json.loads(${JSON.stringify(hiddenTestsJson)})
 
 def _type_ok(value, expected):
     if expected == "str":
@@ -267,6 +270,32 @@ def _type_ok(value, expected):
         return isinstance(value, float)
     return True
 
+def _run_with_inputs(values):
+    input_iter = iter(values)
+    ns = {}
+    tmp = io.StringIO()
+    old_stdout = sys.stdout
+    old_input = builtins.input
+
+    def replay_input(prompt=""):
+        try:
+            return next(input_iter)
+        except StopIteration:
+            raise EOFError("No saved input remains for this exercise.")
+
+    sys.stdout = tmp
+    builtins.input = replay_input
+    try:
+        exec(_code, ns)
+        return {"ok": True, "ns": ns, "output": tmp.getvalue(), "error": ""}
+    except Exception:
+        return {"ok": False, "ns": ns, "output": tmp.getvalue(), "error": traceback.format_exc()}
+    finally:
+        sys.stdout = old_stdout
+        builtins.input = old_input
+
+_current = _run_with_inputs(_saved_inputs)
+_ns = _current["ns"]
 _checks = []
 for req in _requirements:
     name = req["name"]
@@ -275,6 +304,8 @@ for req in _requirements:
     ok = exists and _type_ok(value, req.get("type"))
     if ok and req.get("nonEmpty"):
         ok = bool(str(value).strip())
+    if ok and "equals" in req:
+        ok = value == req["equals"]
     _checks.append((name, ok, value if exists else None))
 
 _print_checks = []
@@ -283,7 +314,18 @@ for name in _must_print:
     value = _ns.get(name)
     _print_checks.append((name, value is not None and str(value) in _output))
 
-{"checks": _checks, "print_checks": _print_checks}
+_hidden_results = []
+for idx, test in enumerate(_hidden_tests, start=1):
+    run = _run_with_inputs(test.get("inputs", []))
+    ok = run["ok"]
+    if ok:
+        for name, expected in test.get("expected", {}).items():
+            if run["ns"].get(name) != expected:
+                ok = False
+                break
+    _hidden_results.append((idx, ok))
+
+{"checks": _checks, "print_checks": _print_checks, "hidden_tests": _hidden_results}
 `;
 
   const proxy = pyodide.runPython(checker);
@@ -292,7 +334,7 @@ for name in _must_print:
   return result;
 }
 
-function describeFailure(checks, printChecks) {
+function describeFailure(checks, printChecks, hiddenTests) {
   const failedRequirement = checks.find(([, ok]) => !ok);
   if (failedRequirement) {
     return `Check the required variable <code>${failedRequirement[0]}</code> and make sure it has the correct type and value.`;
@@ -301,6 +343,11 @@ function describeFailure(checks, printChecks) {
   const failedPrint = printChecks.find(([, ok]) => !ok);
   if (failedPrint) {
     return `Your variable looks good. Now make sure you print <code>${failedPrint[0]}</code>.`;
+  }
+
+  const failedHidden = hiddenTests.find(([, ok]) => !ok);
+  if (failedHidden) {
+    return `Your program ran, but hidden test ${failedHidden[0]} failed. Avoid fixed answers and make sure your solution works with any valid input values.`;
   }
 
   return "Almost there. Review the instructions and try again.";
@@ -328,13 +375,19 @@ async function evaluateExercise(kind) {
     const verification = await verifyExercise(code, result.output, exercise, result.inputs || []);
     const checks = verification.checks || [];
     const printChecks = verification.print_checks || [];
-    const passed = checks.every(([, ok]) => ok) && printChecks.every(([, ok]) => ok);
+    const hiddenTests = verification.hidden_tests || [];
+    const passed = checks.every(([, ok]) => ok) &&
+      printChecks.every(([, ok]) => ok) &&
+      hiddenTests.every(([, ok]) => ok);
 
     if (passed) {
-      setFeedback(feedbackId, "success", `<strong>${exercise.success}</strong>`);
+      const testNote = hiddenTests.length
+        ? `<br><span class="test-pass-note">🧪 ${hiddenTests.length} hidden tests passed.</span>`
+        : "";
+      setFeedback(feedbackId, "success", `<strong>${exercise.success}</strong>${testNote}`);
       markComplete(kind);
     } else {
-      setFeedback(feedbackId, "error", `<strong>Almost.</strong><br>${describeFailure(checks, printChecks)}`);
+      setFeedback(feedbackId, "error", `<strong>Almost.</strong><br>${describeFailure(checks, printChecks, hiddenTests)}`);
     }
   } catch (error) {
     console.error(error);
