@@ -2,51 +2,60 @@ const PythonLabStorage = (() => {
   const PROFILE_KEY = "pythonLearningLabProfilesV1";
   const ACTIVE_PROFILE_KEY = "pythonLearningLabActiveProfileV1";
   const LEGACY_PROGRESS_KEY = "pythonLearningLabProgress";
+  const LEGACY_OWNER_KEY = "pythonLearningLabProgressOwnerV1";
 
   function newId() {
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();
     return `profile-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
-  function readProfiles() {
+  function readJson(key, fallback) {
     try {
-      const parsed = JSON.parse(localStorage.getItem(PROFILE_KEY));
-      return Array.isArray(parsed) ? parsed : [];
+      const parsed = JSON.parse(localStorage.getItem(key));
+      return parsed ?? fallback;
     } catch {
-      return [];
+      return fallback;
     }
+  }
+
+  function readProfiles() {
+    const parsed = readJson(PROFILE_KEY, []);
+    return Array.isArray(parsed) ? parsed : [];
   }
 
   function writeProfiles(profiles) {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
   }
 
+  function readLegacyProgress() {
+    return readJson(LEGACY_PROGRESS_KEY, {});
+  }
+
+  function writeLegacyProgress(progress, ownerId) {
+    localStorage.setItem(LEGACY_PROGRESS_KEY, JSON.stringify(progress || {}));
+    localStorage.setItem(LEGACY_OWNER_KEY, ownerId);
+  }
+
   function migrateLegacyProgress() {
     const profiles = readProfiles();
     if (profiles.length > 0) return;
-
-    let legacyProgress = {};
-    try {
-      legacyProgress = JSON.parse(localStorage.getItem(LEGACY_PROGRESS_KEY)) || {};
-    } catch {
-      legacyProgress = {};
-    }
 
     const profile = {
       id: newId(),
       name: "Learner",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      progress: legacyProgress
+      progress: readLegacyProgress()
     };
 
     writeProfiles([profile]);
     localStorage.setItem(ACTIVE_PROFILE_KEY, profile.id);
+    writeLegacyProgress(profile.progress, profile.id);
   }
 
   function ensureReady() {
     migrateLegacyProgress();
-    const profiles = readProfiles();
+    let profiles = readProfiles();
 
     if (profiles.length === 0) {
       const profile = {
@@ -56,14 +65,28 @@ const PythonLabStorage = (() => {
         updatedAt: new Date().toISOString(),
         progress: {}
       };
-      writeProfiles([profile]);
+      profiles = [profile];
+      writeProfiles(profiles);
       localStorage.setItem(ACTIVE_PROFILE_KEY, profile.id);
+      writeLegacyProgress({}, profile.id);
       return profile;
     }
 
     const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
     const active = profiles.find(profile => profile.id === activeId) || profiles[0];
     localStorage.setItem(ACTIVE_PROFILE_KEY, active.id);
+
+    const legacyOwner = localStorage.getItem(LEGACY_OWNER_KEY);
+    if (legacyOwner === active.id) {
+      const currentProgress = readLegacyProgress();
+      const profile = profiles.find(item => item.id === active.id);
+      profile.progress = currentProgress;
+      profile.updatedAt = new Date().toISOString();
+      writeProfiles(profiles);
+    } else {
+      writeLegacyProgress(active.progress || {}, active.id);
+    }
+
     return active;
   }
 
@@ -79,11 +102,28 @@ const PythonLabStorage = (() => {
     return profiles.find(profile => profile.id === activeId) || profiles[0];
   }
 
+  function saveCurrentLegacyIntoProfile() {
+    const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    if (!activeId) return;
+
+    const profiles = readProfiles();
+    const profile = profiles.find(item => item.id === activeId);
+    if (!profile) return;
+
+    if (localStorage.getItem(LEGACY_OWNER_KEY) === activeId) {
+      profile.progress = readLegacyProgress();
+      profile.updatedAt = new Date().toISOString();
+      writeProfiles(profiles);
+    }
+  }
+
   function createProfile(name) {
     const trimmed = String(name || "").trim();
     if (!trimmed) throw new Error("Enter a learner name.");
 
-    const profiles = getProfiles();
+    ensureReady();
+    saveCurrentLegacyIntoProfile();
+    const profiles = readProfiles();
     const profile = {
       id: newId(),
       name: trimmed.slice(0, 40),
@@ -95,14 +135,19 @@ const PythonLabStorage = (() => {
     profiles.push(profile);
     writeProfiles(profiles);
     localStorage.setItem(ACTIVE_PROFILE_KEY, profile.id);
+    writeLegacyProgress({}, profile.id);
     return profile;
   }
 
   function setActiveProfile(profileId) {
-    const profiles = getProfiles();
+    ensureReady();
+    saveCurrentLegacyIntoProfile();
+    const profiles = readProfiles();
     const profile = profiles.find(item => item.id === profileId);
     if (!profile) throw new Error("Learner profile not found.");
+
     localStorage.setItem(ACTIVE_PROFILE_KEY, profile.id);
+    writeLegacyProgress(profile.progress || {}, profile.id);
     return profile;
   }
 
@@ -110,9 +155,11 @@ const PythonLabStorage = (() => {
     const trimmed = String(name || "").trim();
     if (!trimmed) throw new Error("Enter a learner name.");
 
-    const active = getActiveProfile();
-    const profiles = getProfiles();
-    const profile = profiles.find(item => item.id === active.id);
+    ensureReady();
+    saveCurrentLegacyIntoProfile();
+    const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    const profiles = readProfiles();
+    const profile = profiles.find(item => item.id === activeId);
     profile.name = trimmed.slice(0, 40);
     profile.updatedAt = new Date().toISOString();
     writeProfiles(profiles);
@@ -120,16 +167,22 @@ const PythonLabStorage = (() => {
   }
 
   function getProgress() {
-    return getActiveProfile()?.progress || {};
+    ensureReady();
+    saveCurrentLegacyIntoProfile();
+    const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    const profiles = readProfiles();
+    return profiles.find(item => item.id === activeId)?.progress || {};
   }
 
   function saveProgress(progress) {
-    const active = getActiveProfile();
-    const profiles = getProfiles();
-    const profile = profiles.find(item => item.id === active.id);
+    ensureReady();
+    const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    const profiles = readProfiles();
+    const profile = profiles.find(item => item.id === activeId);
     profile.progress = progress || {};
     profile.updatedAt = new Date().toISOString();
     writeProfiles(profiles);
+    writeLegacyProgress(profile.progress, profile.id);
   }
 
   function resetActiveProgress() {
@@ -137,8 +190,9 @@ const PythonLabStorage = (() => {
   }
 
   function deleteActiveProfile() {
-    const active = getActiveProfile();
-    let profiles = getProfiles().filter(profile => profile.id !== active.id);
+    ensureReady();
+    const activeId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    let profiles = readProfiles().filter(profile => profile.id !== activeId);
 
     if (profiles.length === 0) {
       profiles = [{
@@ -152,8 +206,11 @@ const PythonLabStorage = (() => {
 
     writeProfiles(profiles);
     localStorage.setItem(ACTIVE_PROFILE_KEY, profiles[0].id);
+    writeLegacyProgress(profiles[0].progress || {}, profiles[0].id);
     return profiles[0];
   }
+
+  ensureReady();
 
   return {
     getProfiles,
