@@ -1,0 +1,55 @@
+.modules-container {
+  display: grid;
+  gap: 34px;
+}
+
+.module-section {
+  display: grid;
+  gap: 16px;
+}
+
+.module-heading-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: center;
+}
+
+.module-heading-row h2 {
+  margin: 4px 0 8px;
+}
+
+.compact-module-progress {
+  padding: 18px 20px;
+}
+
+.test-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 750;
+  font-size: .76rem;
+}
+
+.module-locked {
+  opacity: .68;
+}
+
+.module-section + .module-section {
+  padding-top: 30px;
+  border-top: 1px solid var(--border);
+}
+
+.test-pass-note {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .module-heading-row {
+    grid-template-columns: 1fr;
+  }
+}

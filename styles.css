@@ -40,7 +40,7 @@ h2, h3 { color: var(--text); }
 .back-link:hover { opacity: 1; }
 .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; width: min(1180px, 92vw); margin: 32px auto 80px; }
 .sidebar { position: sticky; top: 24px; align-self: start; }
-.progress-card, .lesson-card, .completion-card, .module-progress-card {
+.progress-card, .lesson-card, .completion-card, .module-progress-card, .profile-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -133,6 +133,12 @@ button { font: inherit; }
 .completion-card.show { display: block; }
 
 .dashboard-shell { width: min(1040px, 92vw); margin: 34px auto 80px; display: grid; gap: 34px; }
+.profile-card { padding: 22px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: center; }
+.profile-card h2 { margin: 3px 0 6px; }
+.profile-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+.profile-controls label { margin: 0 0 7px; font-size: .86rem; }
+.profile-controls select { width: 100%; border: 1px solid #aeb9cc; border-radius: 10px; padding: 10px 12px; background: white; color: var(--text); font: inherit; }
+.profile-actions { margin-top: 9px; }
 .dashboard-summary { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: center; }
 .dashboard-summary h2, .section-heading h2 { margin: 4px 0 8px; }
 .dashboard-copy, .section-heading p { color: var(--muted); margin: 0; line-height: 1.6; }
@@ -173,41 +179,16 @@ a.lesson-tile:hover { transform: translateY(-2px); border-color: #b9c5e7; box-sh
 .lesson-progress-track { height: 6px; }
 .empty-state { width: min(640px, 90vw); margin: 90px auto; text-align: center; }
 
-.learner-profile-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 24px;
-  align-items: center;
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(25, 35, 65, .06);
-}
-.learner-profile-card h2 { margin: 4px 0 8px; }
-.profile-actions label { margin: 0 0 8px; color: var(--muted); font-size: .88rem; }
-.profile-actions select {
-  width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #aeb9cc;
-  border-radius: 10px;
-  background: white;
-  color: var(--text);
-  font: inherit;
-}
-.profile-actions select:focus { outline: 3px solid rgba(49,87,213,.15); border-color: var(--accent); }
-.profile-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-
 @media (max-width: 760px) {
   .topbar { align-items: flex-start; flex-direction: column; }
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; }
   nav { grid-template-columns: 1fr 1fr; }
   .result-grid { grid-template-columns: 1fr; }
+  .profile-card { grid-template-columns: 1fr; }
   .dashboard-summary { grid-template-columns: 1fr; }
   .section-heading { align-items: flex-start; flex-direction: column; }
   .lesson-tile { grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 16px; }
   .lesson-number { width: 42px; height: 42px; }
   .lesson-title-row { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .learner-profile-card { grid-template-columns: 1fr; }
 }
